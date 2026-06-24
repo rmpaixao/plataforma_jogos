@@ -1,7 +1,11 @@
-# 🎮 Plataforma de Jogos Multiplayer (MVP)
+# 🎮 Game Arena - Plataforma de Jogos Educacionais
 
-Plataforma estilo Kahoot com mini-games multiplayer de ação em tempo real.  
-**Stack:** PHP (Ratchet/ReactPHP WebSocket) + Phaser 3 (Canvas) + MySQL
+Plataforma estilo Kahoot com mini-game de ação (Space Shooter) em tempo real.  
+**Stack:** PHP + MySQL + Apache + Phaser 3 (Canvas)  
+**Comunicação:** HTTP Polling (sem WebSocket, sem processos background)
+
+✅ **Pronto para hospedagem compartilhada (Hostinger, etc.)**  
+✅ **Apenas subir via FTP - sem Composer, sem dependências, sem terminal**
 
 ---
 
@@ -9,199 +13,194 @@ Plataforma estilo Kahoot com mini-games multiplayer de ação em tempo real.
 
 ```
 plataforma_jogos/
+├── api/
+│   ├── obter_status.php       # GET - Status da sala, pergunta atual, ranking
+│   ├── responder_pergunta.php # POST - Enviar resposta do quiz
+│   └── salvar_score_acao.php  # POST - Salvar pontuação do mini-game
 ├── config/
-│   └── database.php          # Conexão PDO com MySQL (lê do .env)
+│   └── database.php           # Conexão PDO com MySQL (edite aqui!)
 ├── database/
-│   └── schema.sql            # Script SQL para criar o banco e tabelas
-├── vendor/                   # Dependências do Composer (gerado)
-├── .env                      # Configurações sensíveis (NÃO comitar)
+│   └── schema.sql             # Script SQL para criar o banco e tabelas
+├── .env                       # Credenciais do banco (opcional, use database.php)
 ├── .gitignore
-├── composer.json
-├── composer.lock
-├── index.php                 # Frontend: Login + Phaser 3 + WebSocket Client
-├── server.php                # Servidor WebSocket (Ratchet/ReactPHP)
+├── index.php                  # Frontend: Login + Phaser 3 + HTTP Polling
 └── README.md
 ```
 
 ---
 
-## 🚀 Passo a Passo para Rodar o Projeto
+## 🚀 Como Subir para a Hostinger (ou qualquer hospedagem)
 
-### 1. Pré-requisitos
+### 1. Criar o Banco de Dados
 
-- **PHP 8.0+** (com extensões: `pdo_mysql`, `mbstring`, `openssl`)
-- **Composer** (gerenciador de dependências PHP)
-- **MySQL** (recomendado: XAMPP - já incluso)
-- **Apache** (para servir o `index.php`)
-
-### 2. Configurar o Banco de Dados
-
-**Opção A - Via linha de comando:**
-```bash
-mysql -u root < database/schema.sql
-```
-
-**Opção B - Via phpMyAdmin:**
-1. Abra http://localhost/phpmyadmin
-2. Vá na aba "SQL"
-3. Copie e cole o conteúdo do arquivo `database/schema.sql`
-4. Clique em "Executar"
+1. Acesse o **phpMyAdmin** da sua hospedagem (Hostinger: hPanel → Databases → phpMyAdmin)
+2. Clique na aba **SQL**
+3. Copie e cole **todo o conteúdo** do arquivo `database/schema.sql`
+4. Clique em **Executar**
 
 Isso criará:
 - Banco `plataforma_jogos`
 - Tabelas: `salas`, `jogadores`, `perguntas`, `respostas`
 - 8 perguntas de exemplo para o quiz
 
-### 3. Configurar o .env
+### 2. Configurar a Conexão com o Banco
 
-Edite o arquivo `.env` na raiz do projeto e ajuste conforme necessário:
+Edite o arquivo **`config/database.php`** com os dados do seu banco:
 
-```env
-# --- Banco de Dados MySQL ---
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=plataforma_jogos
-DB_USER=root
-DB_PASS=
-
-# --- Servidor WebSocket ---
-WS_HOST=0.0.0.0
-WS_PORT=8080
+```php
+define('DB_HOST', 'localhost');           // Hostinger: mysql.hostinger.com
+define('DB_PORT', '3306');
+define('DB_NAME', 'plataforma_jogos');    // Hostinger: u123456789_plataforma
+define('DB_USER', 'root');                // Hostinger: u123456789_root
+define('DB_PASS', '');                    // Sua senha do MySQL
 ```
 
-Para XAMPP (usuário `root`, senha vazia), não precisa alterar nada.
+> **Hostinger:** As credenciais estão em hPanel → Databases → MySQL Databases
 
-### 4. Instalar Dependências
+### 3. Fazer Upload dos Arquivos
 
-```bash
-cd e:\Projetos\plataforma_jogos
-composer install
+**Via FTP (FileZilla, etc.):**
+- Conecte ao FTP da sua hospedagem
+- Envie a pasta `plataforma_jogos` inteira para o diretório `public_html/`
+
+**Via Gerenciador de Arquivos (hPanel):**
+- Acesse hPanel → Files → File Manager
+- Faça upload da pasta `plataforma_jogos` para `public_html/`
+
+### 4. Acessar o Jogo
+
+Abra no navegador:
 ```
-
-### 5. Iniciar o Servidor WebSocket
-
-Abra um **terminal separado** e execute:
-
-```bash
-cd e:\Projetos\plataforma_jogos
-php server.php
-```
-
-Você verá:
-```
-================================================
-  Plataforma de Jogos - WebSocket Server
-  Endereço: 0.0.0.0:8080
-  MySQL:    localhost:3306/plataforma_jogos
-  Pressione Ctrl+C para parar
-================================================
-[INICIO] Servidor WebSocket de Jogos Multiplayer iniciado.
-```
-
-**Deixe este terminal aberto** — o servidor precisa ficar rodando em segundo plano.
-
-### 6. Servir o Frontend via Apache
-
-Coloque a pasta `plataforma_jogos` dentro do `htdocs` do XAMPP (ou aponte o Apache para ela):
-
-- Copie (ou mova) a pasta para: `E:\xampp\htdocs\plataforma_jogos`
-- Acesse no navegador: **[http://localhost/plataforma_jogos/index.php](http://localhost/plataforma_jogos/index.php)**
-
-### 7. Testar Multiplayer
-
-1. Abra **duas abas/guia** do navegador em `http://localhost/plataforma_jogos/index.php`
-2. Em cada aba:
-   - Digite um nome diferente (ex: "Jogador 1" e "Jogador 2")
-   - Digite o **mesmo código de sala** (ex: `DEMO`)
-   - Clique em "Entrar no Jogo"
-3. Use as **setas do teclado** para mover o círculo
-4. Ambos se verão se movendo em tempo real ✅
-
----
-
-## 🎯 Eventos WebSocket (Protocolo)
-
-### Cliente → Servidor
-
-| Evento | Descrição | Payload |
-|--------|-----------|---------|
-| `join_room` | Entrar/criar sala | `{ "type": "join_room", "roomId": "ABC", "name": "Jogador" }` |
-| `send_movement` | Enviar movimento | `{ "type": "send_movement", "x": 400, "y": 300 }` |
-| `submit_answer` | Responder quiz | `{ "type": "submit_answer", "answer": "B", "questionId": 1 }` |
-| `leave_room` | Sair da sala | `{ "type": "leave_room" }` |
-
-### Servidor → Cliente
-
-| Evento | Descrição |
-|--------|-----------|
-| `joined_room` | Confirma entrada (já vem lista de jogadores) |
-| `player_joined` | Novo jogador entrou na sala |
-| `player_moved` | Jogador se moveu (atualiza posição) |
-| `player_left` | Jogador saiu da sala |
-| `scoreboard_update` | Placar atualizado |
-| `answer_result` | Resultado da resposta do quiz |
-| `error` | Erro |
-
----
-
-## 🧠 Arquitetura
-
-```
-┌─────────────────────────────────────────────────┐
-│                  Navegador (Chrome)              │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐   │
-│  │  Phaser 3 │    │ WebSocket│    │   UI     │   │
-│  │ (Canvas)  │◄──►│ (Client) │    │ (Login/  │   │
-│  │           │    │          │    │  Placar) │   │
-│  └──────────┘    └────┬─────┘    └──────────┘   │
-└───────────────────────┼─────────────────────────┘
-                        │ WebSocket (porta 8080)
-                        ▼
-┌─────────────────────────────────────────────────┐
-│           Servidor WebSocket (PHP)               │
-│  ┌─────────────────────────────────────────────┐ │
-│  │  Ratchet (ReactPHP) - GameServer            │ │
-│  │  • Gerencia salas em memória                │ │
-│  │  • Broadcast de movimentos em tempo real    │ │
-│  │  • Valida respostas do quiz                 │ │
-│  └──────────────────┬──────────────────────────┘ │
-└─────────────────────┼───────────────────────────┘
-                      │ PDO
-                      ▼
-┌─────────────────────────────────────────────────┐
-│              MySQL (XAMPP)                       │
-│  • salas     - registro de salas ativas          │
-│  • jogadores - jogadores e pontuações            │
-│  • perguntas - banco de perguntas do quiz        │
-│  • respostas - histórico de respostas            │
-└─────────────────────────────────────────────────┘
+https://seudominio.com/plataforma_jogos/index.php
 ```
 
 ---
 
-## 🔮 Próximos Passos (Evolução do MVP)
+## 🎯 Como Usar (Aluno)
 
-- [ ] **Sistema de quiz completo** com temporizador e rodadas
-- [ ] **Jogo Snake multiplayer** dentro da mesma sala
-- [ ] **Jogo Nave (space shooter)** cooperativo
-- [ ] **Autenticação** via banco de dados
-- [ ] **Painel Admin** para criar perguntas
-- [ ] **Ranking global** entre salas
-- [ ] **Salas privadas** com senha
-- [ ] **Suporte a Redis** para escalar horizontalmente
+1. **Digite seu Nome** (ex: "João")
+2. **Digite o Código da Sala** (ex: "ABC123" - o professor informa)
+3. Clique em **"Entrar no Jogo"**
+4. O jogo sincroniza automaticamente com o professor via polling a cada 1.5s
+
+### O que acontece em cada status:
+
+| Status da Sala | O que o aluno vê |
+|----------------|------------------|
+| `aguardando` | Tela de espera com ranking |
+| `pergunta_1` | Quiz overlay com 4 alternativas |
+| `pergunta_2` | Próxima pergunta |
+| `minigame` | **Space Shooter** - atirar nas naves inimigas! |
+| `fim` | Tela final com ranking e pontuação total |
+
+---
+
+## 🎮 Mini-Game: Space Shooter (Navinha)
+
+- **Setas do teclado:** Movimentar a nave
+- **Espaço:** Atirar
+- **Objetivo:** Destruir o máximo de inimigos antes de perder 3 vidas
+- Ao final, a pontuação é **automaticamente enviada** para o servidor via `api/salvar_score_acao.php`
+
+---
+
+## 🧠 Para o Professor (Controle da Sala)
+
+O professor controla a sala alterando a coluna `status` na tabela `salas`:
+
+```sql
+-- Criar sala
+INSERT INTO salas (room_id, host_name, status) VALUES ('ABC123', 'Professor', 'aguardando');
+
+-- Avançar para pergunta 1
+UPDATE salas SET status = 'pergunta_1' WHERE room_id = 'ABC123';
+
+-- Avançar para pergunta 2
+UPDATE salas SET status = 'pergunta_2' WHERE room_id = 'ABC123';
+
+-- Iniciar mini-game
+UPDATE salas SET status = 'minigame' WHERE room_id = 'ABC123';
+
+-- Encerrar
+UPDATE salas SET status = 'fim' WHERE room_id = 'ABC123';
+```
+
+> 💡 **Dica:** Crie uma interface admin simples com botões que executam esses SQLs.
+
+---
+
+## 📡 API - Documentação
+
+### `GET /api/obter_status.php`
+
+**Parâmetros:** `room_id`, `jogador_id`
+
+**Retorno:**
+```json
+{
+  "status": "pergunta_1",
+  "room_id": "ABC123",
+  "jogador": { "jogador_id": "jogador_42", "nome": "João", "score_quiz": 0, "score_acao": 0 },
+  "pergunta": {
+    "id": 1,
+    "pergunta": "Qual é a capital do Brasil?",
+    "a": "Rio de Janeiro", "b": "Brasília", "c": "São Paulo", "d": "Salvador"
+  },
+  "ranking": [ { "nome": "João", "total": 0 } ],
+  "ja_respondeu": false
+}
+```
+
+### `POST /api/responder_pergunta.php`
+
+**Body:**
+```json
+{ "room_id": "ABC123", "jogador_id": "jogador_42", "pergunta_id": 1, "resposta": "B" }
+```
+
+**Retorno:**
+```json
+{ "acertou": true, "resposta_certa": "B", "pontos_ganhos": 100, "score_quiz": 100 }
+```
+
+### `POST /api/salvar_score_acao.php`
+
+**Body:**
+```json
+{ "room_id": "ABC123", "jogador_id": "jogador_42", "score": 1500 }
+```
+
+**Retorno:**
+```json
+{ "sucesso": true, "score_acao": 1500, "score_quiz": 0, "total": 1500 }
+```
 
 ---
 
 ## 🔧 Solução de Problemas
 
-**"Erro de conexão WebSocket" no navegador**
-- Verifique se o servidor PHP está rodando: `php server.php`
-- Verifique se a porta 8080 não está bloqueada por firewall
+**"Erro de conexão com o banco de dados"**
+- Verifique as credenciais em `config/database.php`
+- No Hostinger, o host geralmente é `mysql.hostinger.com` (não `localhost`)
 
-**"Could not connect to MySQL"**
-- Confirme que o MySQL do XAMPP está rodando (Painel XAMPP → Start MySQL)
-- Verifique as credenciais no `.env`
+**Tela branca ao acessar**
+- Verifique se o PHP está habilitado na hospedagem
+- Confira se o caminho da URL está correto
 
 **Phaser não carrega**
-- Verifique a conexão com a internet (CDN do Phaser)
-- Ou baixe o Phaser localmente: `https://phaser.io/download`
+- Verifique a conexão com a internet (CDN)
+- Ou baixe o Phaser em `https://phaser.io/download` e coloque localmente
+
+**Polling não funciona**
+- O navegador precisa estar com JavaScript habilitado
+- Verifique o console do navegador (F12) para erros
+
+---
+
+## 🔮 Próximos Passos
+
+- [ ] **Painel Admin** para professor controlar a sala via interface web
+- [ ] **Jogo Snake** como segundo mini-game de ação
+- [ ] **Temporizador** nas perguntas do quiz
+- [ ] **Exportar relatório** de respostas em CSV
+- [ ] **Modo dupla** (cooperativo) no Space Shooter

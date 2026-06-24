@@ -1,47 +1,80 @@
 <?php
 /**
- * Configuração do Banco de Dados MySQL
+ * CONFIGURAÇÃO DO BANCO DE DADOS MySQL
  * 
- * Plataforma de Jogos Multiplayer
- * Lê as credenciais do arquivo .env na raiz do projeto
+ * Lê as credenciais do arquivo .env na raiz do projeto.
+ * Se o .env não existir, usa valores padrão (localhost/root/sem senha).
+ * 
+ * NÃO precisa de Composer nem phpdotenv - parser .env manual em PHP puro.
  * 
  * Uso:
- *   require_once __DIR__ . '/config/database.php';
+ *   require_once __DIR__ . '/../config/database.php';
  *   $pdo = getDBConnection();
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+// Carrega variáveis do .env manualmente (sem dependências)
+function loadEnv(string $caminho): array
+{
+    $vars = [];
 
-use Dotenv\Dotenv;
+    if (!file_exists($caminho)) {
+        return $vars;
+    }
 
-// Carrega variáveis do .env (se existir)
-if (file_exists(__DIR__ . '/../.env')) {
-    $dotenv = Dotenv::createImmutable(__DIR__ . '/..');
-    $dotenv->load();
-    $dotenv->required(['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER']);
+    $linhas = file($caminho, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+    foreach ($linhas as $linha) {
+        $linha = trim($linha);
+
+        // Pula comentários e linhas vazias
+        if ($linha === '' || str_starts_with($linha, '#')) {
+            continue;
+        }
+
+        // Divide no primeiro "="
+        $pos = strpos($linha, '=');
+        if ($pos === false) {
+            continue;
+        }
+
+        $chave = trim(substr($linha, 0, $pos));
+        $valor = trim(substr($linha, $pos + 1));
+
+        // Remove aspas se houver
+        if ((str_starts_with($valor, '"') && str_ends_with($valor, '"'))
+            || (str_starts_with($valor, "'") && str_ends_with($valor, "'"))) {
+            $valor = substr($valor, 1, -1);
+        }
+
+        $vars[$chave] = $valor;
+    }
+
+    return $vars;
 }
 
+// Carrega variáveis de ambiente do .env
+$envVars = loadEnv(__DIR__ . '/../.env');
+
+// Define as constantes com fallback para valores padrão
+define('DB_HOST', $envVars['DB_HOST'] ?? 'localhost');
+define('DB_PORT', $envVars['DB_PORT'] ?? '3306');
+define('DB_NAME', $envVars['DB_NAME'] ?? 'plataforma_jogos');
+define('DB_USER', $envVars['DB_USER'] ?? 'root');
+define('DB_PASS', $envVars['DB_PASS'] ?? '');
+
 /**
- * Retorna uma conexão PDO com o MySQL
- * @return PDO
- * @throws PDOException
+ * Retorna uma conexão PDO com MySQL (singleton)
  */
 function getDBConnection(): PDO
 {
     static $pdo = null;
 
     if ($pdo === null) {
-        $host = $_ENV['DB_HOST'] ?? 'localhost';
-        $port = $_ENV['DB_PORT'] ?? '3306';
-        $name = $_ENV['DB_NAME'] ?? 'plataforma_jogos';
-        $user = $_ENV['DB_USER'] ?? 'root';
-        $pass = $_ENV['DB_PASS'] ?? '';
-
         $dsn = sprintf(
             'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-            $host,
-            $port,
-            $name
+            DB_HOST,
+            DB_PORT,
+            DB_NAME
         );
 
         $options = [
@@ -50,7 +83,15 @@ function getDBConnection(): PDO
             PDO::ATTR_EMULATE_PREPARES   => false,
         ];
 
-        $pdo = new PDO($dsn, $user, $pass, $options);
+        try {
+            $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            die(json_encode([
+                'erro'  => 'Erro de conexão com o banco de dados.',
+                'debug' => $e->getMessage()
+            ]));
+        }
     }
 
     return $pdo;

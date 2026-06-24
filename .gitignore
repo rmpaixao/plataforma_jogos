@@ -1,15 +1,9 @@
 # ============================================================
-# .gitignore - Plataforma de Jogos Multiplayer
+# .gitignore - Plataforma de Jogos (Apache-only)
 # ============================================================
 
-# Arquivo de ambiente (contém senhas e configurações)
+# Arquivo de ambiente (credenciais do banco)
 .env
-
-# Dependências do Composer
-/vendor/
-
-# Arquivos de log
-*.log
 
 # Sistema operacional
 Thumbs.db
@@ -19,15 +13,9 @@ Desktop.ini
 # IDE / Editor
 .vscode/
 .idea/
-*.sublime-project
-*.sublime-workspace
-
-# Node.js (caso use npm futuramente)
-node_modules/
-npm-debug.log*
 
 # Arquivos temporários
+*.log
 *.tmp
 *.swp
-*.swo
 *~
