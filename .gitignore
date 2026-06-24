@@ -1,0 +1,33 @@
+# ============================================================
+# .gitignore - Plataforma de Jogos Multiplayer
+# ============================================================
+
+# Arquivo de ambiente (contém senhas e configurações)
+.env
+
+# Dependências do Composer
+/vendor/
+
+# Arquivos de log
+*.log
+
+# Sistema operacional
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Node.js (caso use npm futuramente)
+node_modules/
+npm-debug.log*
+
+# Arquivos temporários
+*.tmp
+*.swp
+*.swo
+*~
